@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prono CFM Moto - Championnat de France de la Montagne</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            red: '#e53e3e',
+                            dark: '#121214',
+                            card: '#1e1e24',
+                            border: '#2d2d38',
+                            accent: '#3182ce',
+                            gold: '#ecc94b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0d0d11;
+            color: #f7fafc;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col pb-12">
+
+    <header class="bg-brand-card border-b border-brand-border sticky top-0 z-40 shadow-lg">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <span class="text-2xl">🏁</span>
+                <h1 class="font-black text-xl tracking-wider text-white uppercase">CFM MOTO <span class="text-brand-red">PRONOS</span></h1>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="switchMainTab('pronos')" id="tab-btn-pronos" class="px-3 py-1.5 rounded-lg text-sm font-bold bg-brand-red text-white transition">Pronos</button>
+                <button onclick="switchMainTab('saison')" id="tab-btn-saison" class="px-3 py-1.5 rounded-lg text-sm font-bold bg-brand-border text-gray-300 transition">👑 Saison</button>
+                <button onclick="switchMainTab('classement')" id="tab-btn-classement" class="px-3 py-1.5 rounded-lg text-sm font-bold bg-brand-border text-gray-300 transition">Classement</button>
+                <button onclick="openAdminModal()" class="px-2.5 py-1.5 rounded-lg text-sm font-bold bg-gray-800 text-gray-400 border border-gray-700">⚙️</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto w-full px-4 pt-4 flex-grow">
+
+        <!-- VIEW 1: MANCHES & PRONOSTICS -->
+        <div id="view-pronos" class="space-y-4">
+            
+            <!-- 1. BARRE DE SÉLECTION CLAIRE DE MANCHE -->
+            <div>
+                <label class="block text-xs uppercase font-bold text-gray-400 mb-1.5">SÉLECTIONNER LA MANCHE (1 à 7) :</label>
+                <div class="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
+                    <!-- JS generated manche buttons -->
+                    <div id="manches-bar" class="flex gap-2 w-full"></div>
+                </div>
+            </div>
+
+            <!-- RAPPORT MANCHE SÉLECTIONNÉE -->
+            <div id="manche-banner" class="bg-brand-card border border-brand-border rounded-xl p-4 flex justify-between items-center shadow-md">
+                <div>
+                    <span class="text-xs font-bold uppercase tracking-wider text-brand-red">MANCHE EN COURS</span>
+                    <h2 id="current-manche-title" class="text-2xl font-black text-white">Marchaux</h2>
+                </div>
+                <div id="manche-status-badge" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-emerald-900/60 text-emerald-400 border border-emerald-700/50">
+                    🟢 Pronostics Ouverts
+                </div>
+            </div>
+
+            <!-- 2. SÉLECTION DES CATÉGORIES SANS PICTOGRAMMES -->
+            <div>
+                <label class="block text-xs uppercase font-bold text-gray-400 mb-1.5">CATÉGORIES :</label>
+                <div id="categories-bar" class="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
+                    <!-- JS generated category tabs -->
+                </div>
+            </div>
+
+            <!-- 3. ZONE DE SELECTION DU TOP 5 -->
+            <div class="bg-brand-card border border-brand-border rounded-2xl p-4 shadow-xl">
+                <div class="flex justify-between items-center mb-4 pb-2 border-b border-brand-border">
+                    <h3 class="font-bold text-lg text-white flex items-center gap-2">
+                        <span>TOP 5 - Category:</span>
+                        <span id="current-cat-display" class="text-brand-red">Superbike</span>
+                    </h3>
+                    <span id="prono-status-tag" class="text-xs bg-gray-800 text-gray-400 px-2 py-1 rounded font-bold">Non Validé</span>
+                </div>
+
+                <!-- Grille du Top 5 -->
+                <div class="space-y-3 mb-6" id="top5-slots-container">
+                    <!-- JS render 5 slot cards -->
+                </div>
+
+                <!-- Bouton de validation -->
+                <button id="btn-validate-prono" onclick="saveProno()" class="w-full py-3.5 bg-brand-red hover:bg-red-600 text-white font-black text-lg rounded-xl shadow-lg transition active:scale-[0.98]">
+                    VALIDER MON PRONO
+                </button>
+            </div>
+        </div>
+
+        <!-- VIEW 2: PRONO SAISON -->
+        <div id="view-saison" class="hidden space-y-4">
+            <div class="bg-gradient-to-r from-yellow-950/40 to-brand-card border border-yellow-700/40 rounded-2xl p-4 shadow-xl">
+                <div class="flex items-center gap-3 mb-2">
+                    <span class="text-3xl">👑</span>
+                    <div>
+                        <h2 class="text-xl font-black text-yellow-400 uppercase tracking-wide">KING OF THE MOUNTAIN - SAISON</h2>
+                        <p class="text-xs text-gray-300">Pronostiquez le Top 3 Final du Championnat par Catégorie</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Onglets Catégories Saison -->
+            <div id="saison-categories-bar" class="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
+                <!-- JS generated -->
+            </div>
+
+            <!-- Grille Top 3 Saison -->
+            <div class="bg-brand-card border border-brand-border rounded-2xl p-4 shadow-xl space-y-4">
+                <h3 class="font-bold text-lg text-white">Podium Final Saison - <span id="saison-cat-display" class="text-brand-gold">Superbike</span></h3>
+                <div id="saison-slots-container" class="space-y-3">
+                    <!-- JS render Top 3 slots -->
+                </div>
+                <button id="btn-validate-saison" onclick="saveSaisonProno()" class="w-full py-3.5 bg-yellow-600 hover:bg-yellow-500 text-black font-black text-lg rounded-xl shadow-lg transition active:scale-[0.98]">
+                    VALIDER PRONO SAISON
+                </button>
+            </div>
+        </div>
+
+        <!-- VIEW 3: CLASSEMENT JOUERS -->
+        <div id="view-classement" class="hidden space-y-6">
+            
+            <!-- 👑 CLASSEMENT GÉNÉRAL KING OF THE MOUNTAIN (EN PREMIER ET EN GROS) -->
+            <div class="bg-gradient-to-br from-yellow-900/30 via-brand-card to-brand-card border-2 border-yellow-500/50 rounded-2xl p-5 shadow-2xl">
+                <div class="flex items-center justify-between mb-4 border-b border-yellow-500/30 pb-3">
+                    <div>
+                        <span class="text-xs font-black uppercase text-yellow-400 tracking-widest">CLASSEMENT GÉNÉRAL GLOBAL</span>
+                        <h2 class="text-2xl font-black text-white flex items-center gap-2">
+                            👑 KING OF THE MOUNTAIN
+                        </h2>
+                    </div>
+                    <span class="text-xs bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 px-3 py-1 rounded-full font-bold">
+                        Toutes catégories confondues
+                    </span>
+                </div>
+
+                <div class="space-y-2" id="leaderboard-general">
+                    <!-- JS generated general leaderboard -->
+                </div>
+            </div>
+
+            <!-- CLASSEMENTS DÉTAILLÉS PAR CATÉGORIE -->
+            <div class="bg-brand-card border border-brand-border rounded-2xl p-4 shadow-xl space-y-4">
+                <h3 class="font-bold text-lg text-white">Classements par Catégorie</h3>
+                
+                <div id="ranking-categories-bar" class="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
+                    <!-- JS generated category tabs for ranking -->
+                </div>
+
+                <div class="space-y-2 pt-2" id="leaderboard-category">
+                    <!-- JS generated category leaderboard -->
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- MODAL DU SÉLECTEUR TACTILE DE PILOTES -->
+    <div id="modal-pilotes" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-brand-card border border-brand-border w-full max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl">
+            <div class="p-4 border-b border-brand-border flex justify-between items-center bg-gray-900">
+                <div>
+                    <span id="modal-position-title" class="text-xs font-bold text-brand-red uppercase">Choix pour 1ère Place</span>
+                    <h3 class="text-lg font-bold text-white">Sélectionner un pilote</h3>
+                </div>
+                <button onclick="closePiloteModal()" class="w-8 h-8 rounded-full bg-gray-800 text-gray-300 font-bold flex items-center justify-center">✕</button>
+            </div>
+            
+            <div class="p-4 overflow-y-auto flex-grow" id="modal-pilotes-grid">
+                <!-- JS render grid of driver tiles -->
+            </div>
+
+            <div class="p-3 border-t border-brand-border bg-gray-900 text-center">
+                <button onclick="clearSlotSelection()" class="w-full py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-sm font-bold">Retirer le pilote sélectionné</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL ADMIN -->
+    <div id="modal-admin" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-brand-card border border-brand-border w-full max-w-lg rounded-2xl p-5 space-y-4 max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div class="flex justify-between items-center border-b border-brand-border pb-3">
+                <h3 class="text-lg font-bold text-white">⚙️ Espace Administration</h3>
+                <button onclick="closeAdminModal()" class="text-gray-400 hover:text-white font-bold">✕</button>
+            </div>
+
+            <!-- CODE PIN CHECK -->
+            <div id="admin-auth-section" class="space-y-3">
+                <p class="text-sm text-gray-300">Entrez le code PIN admin (par défaut : <span class="font-mono text-brand-red font-bold">1234</span>) :</p>
+                <input type="password" id="admin-pin-input" placeholder="Code PIN" class="w-full bg-gray-900 border border-brand-border rounded-xl p-3 text-white text-center text-xl font-mono tracking-widest">
+                <button onclick="checkAdminPin()" class="w-full py-3 bg-brand-red text-white font-bold rounded-xl">Se connecter</button>
+            </div>
+
+            <!-- CONTENU ADMIN SI CONNECTÉ -->
+            <div id="admin-content-section" class="hidden space-y-6">
+                <!-- 1. GESTION DES MANCHES (VERROUILLAGE) -->
+                <div class="space-y-2 border-b border-brand-border pb-4">
+                    <h4 class="font-bold text-sm text-brand-red uppercase">1. Verrouillage de la Manche</h4>
+                    <div class="flex items-center justify-between bg-gray-900 p-3 rounded-xl border border-brand-border">
+                        <span class="text-sm font-bold" id="admin-manche-name">Marchaux</span>
+                        <button id="admin-btn-lock" onclick="toggleMancheLock()" class="px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-red-600">Verrouiller</button>
+                    </div>
+                </div>
+
+                <!-- 2. COPIER-COLLER D'ENGAGÉS EN 2 SECONDES -->
+                <div class="space-y-2 border-b border-brand-border pb-4">
+                    <h4 class="font-bold text-sm text-brand-red uppercase">2. Importer Engagés (1 pilote par ligne)</h4>
+                    <p class="text-xs text-gray-400">Pour la catégorie <strong id="admin-cat-name" class="text-white">Superbike</strong> :</p>
+                    <textarea id="admin-pilotes-import" rows="4" placeholder="Exemple:&#10;Jean DUPONT (#12)&#10;Pierre MARTIN (#45)&#10;Luc MOREAU (#8)" class="w-full bg-gray-900 border border-brand-border rounded-xl p-3 text-sm text-white font-mono"></textarea>
+                    <button onclick="importPilotes()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-sm">Remplacer la liste des engagés</button>
+                </div>
+
+                <!-- 3. RÉSULTATS OFFICIELS MANCHE -->
+                <div class="space-y-3">
+                    <h4 class="font-bold text-sm text-brand-red uppercase">3. Entrer Résultats Officiels Top 5</h4>
+                    <div id="admin-official-slots" class="space-y-2">
+                        <!-- JS generated official slots selection -->
+                    </div>
+                    <button onclick="saveOfficialResults()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-sm">Enregistrer Résultats Officiels</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CONSTANTES DONNÉES DU CHAMPIONNAT
+        const MANCHES = [
+            { id: 1, name: "Chanaz" },
+            { id: 2, name: "Marchaux" },
+            { id: 3, name: "Panissières" },
+            { id: 4, name: "Petit-Abergement" },
+            { id: 5, name: "Marlhes" },
+            { id: 6, name: "Frangy" },
+            { id: 7, name: "Merléac" }
+        ];
+
+        const CATEGORIES = [
+            "300cc", "Open", "Supersport", "Superbike", "Side-Car", "Quad", "Ancienne"
+        ];
+
+        // ÉTAT APPLICATION
+        let state = {
+            currentMancheId: 1,
+            currentCategory: "Superbike",
+            saisonCategory: "Superbike",
+            rankingCategory: "Superbike",
+            activeMainTab: "pronos", // pronos, saison, classement
+            currentModalSlot: null, // index 0..4 or 0..2 for saison
+            modalMode: "manche", // manche vs saison
+            isAdminLoggedIn: false,
+            
+            // Verrouillage des manches (mancheId: boolean)
+            manchesLocked: { 1: false, 2: false, 3: false, 4: false, 5: false, 6: false, 7: false },
+            
+            // Pilotes par Catégorie (Listes par défaut simplifiées mais personnalisables via admin)
+            pilotes: {
+                "300cc": ["Lucas Bernard (#12)", "Hugo Petit (#4)", "Enzo Gomez (#27)", "Mathis Roux (#99)", "Tom Caron (#15)"],
+                "Open": ["Sylvain Fabre (#8)", "Damien Blanc (#33)", "Nicolas Richard (#82)", "Alexandre Mercier (#11)", "Julien Gauthier (#5)"],
+                "Supersport": ["David Denis (#1)", "Cyril Pailloux (#46)", "Jérémy Gros (#67)", "Vincent Leduc (#22)", "Romain Millet (#88)"],
+                "Superbike": ["Jean-Luc David (#7)", "Thomas Bosson (#3)", "Marc Giraud (#10)", "Geoffroy Devis (#18)", "Antoine Bazin (#42)", "Cédric Tanguy (#55)"],
+                "Side-Car": ["Dichamp / Courier (#102)", "Laval / Pautet (#115)", "Berchet / Nicole (#101)", "Chanal / Chanal (#104)"],
+                "Quad": ["Florian Mangeot (#201)", "Mickaël Revoy (#205)", "Thierry Dufour (#212)", "Kevin Combes (#208)"],
+                "Ancienne": ["Gérard Monnin (#302)", "Philippe Lebrun (#315)", "Michel Vernet (#308)", "Jean-Claude Bazin (#301)"]
+            },
+
+            // Pronostics utilisateurs : { mancheId_cat: [pilote1, pilote2, pilote3, pilote4, pilote5] }
+            userPronos: {},
+
+            // Pronostics Saison : { cat: [pilote1, pilote2, pilote3] }
+            userSaisonPronos: {},
+
+            // Résultats Officiels enregistrés par Admin : { mancheId_cat: [pilote1, ...] }
+            officialResults: {},
+
+            // Classement des Joueurs fictif pour démo fluide
+            players: [
+                { name: "Vous (Joueur)", isUser: true },
+                { name: "Rider_71", isUser: false },
+                { name: "Piston_King", isUser: false },
+                { name: "Gaz_A_Fond", isUser: false },
+                { name: "Corner_Master", isUser: false }
+            ]
+        };
+
+        window.onload = function() {
+            loadLocalData();
+            renderManchesBar();
+            renderCategoriesBar();
+            renderSaisonCategoriesBar();
+            renderRankingCategoriesBar();
+            updateMancheBanner();
+            renderTop5Slots();
+            renderSaisonSlots();
+        };
+
+        function loadLocalData() {
+            const savedPronos = localStorage.getItem('cfm_user_pronos');
+            if (savedPronos) state.userPronos = JSON.parse(savedPronos);
+
+            const savedSaison = localStorage.getItem('cfm_user_saison_pronos');
+            if (savedSaison) state.userSaisonPronos = JSON.parse(savedSaison);
+
+            const savedOfficial = localStorage.getItem('cfm_official_results');
+            if (savedOfficial) state.officialResults = JSON.parse(savedOfficial);
+
+            const savedPilotes = localStorage.getItem('cfm_pilotes');
+            if (savedPilotes) state.pilotes = JSON.parse(savedPilotes);
+
+            const savedLocks = localStorage.getItem('cfm_locks');
+            if (savedLocks) state.manchesLocked = JSON.parse(savedLocks);
+        }
+
+        function switchMainTab(tab) {
+            state.activeMainTab = tab;
+            document.getElementById('view-pronos').classList.toggle('hidden', tab !== 'pronos');
+            document.getElementById('view-saison').classList.toggle('hidden', tab !== 'saison');
+            document.getElementById('view-classement').classList.toggle('hidden', tab !== 'classement');
+
+            // Style buttons
+            document.getElementById('tab-btn-pronos').className = `px-3 py-1.5 rounded-lg text-sm font-bold transition ${tab === 'pronos' ? 'bg-brand-red text-white' : 'bg-brand-border text-gray-300'}`;
+            document.getElementById('tab-btn-saison').className = `px-3 py-1.5 rounded-lg text-sm font-bold transition ${tab === 'saison' ? 'bg-yellow-600 text-black' : 'bg-brand-border text-gray-300'}`;
+            document.getElementById('tab-btn-classement').className = `px-3 py-1.5 rounded-lg text-sm font-bold transition ${tab === 'classement' ? 'bg-brand-red text-white' : 'bg-brand-border text-gray-300'}`;
+
+            if (tab === 'classement') {
+                renderLeaderboards();
+            }
+        }
+
+        function renderManchesBar() {
+            const container = document.getElementById('manches-bar');
+            container.innerHTML = MANCHES.map(m => {
+                const isActive = m.id === state.currentMancheId;
+                const isLocked = state.manchesLocked[m.id];
+                return `
+                    <button onclick="selectManche(${m.id})" class="flex-1 min-w-[100px] py-2 px-3 rounded-xl border text-center font-bold text-xs transition ${
+                        isActive 
+                        ? 'bg-brand-red border-brand-red text-white shadow-lg' 
+                        : 'bg-brand-card border-brand-border text-gray-300 hover:border-gray-600'
+                    }">
+                        <div>M${m.id}</div>
+                        <div class="text-sm font-extrabold truncate">${m.name}</div>
+                        ${isLocked ? '<span class="text-[10px] text-red-300">🔒 Fermé</span>' : ''}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function selectManche(id) {
+            state.currentMancheId = id;
+            renderManchesBar();
+            updateMancheBanner();
+            renderCategoriesBar();
+            renderTop5Slots();
+        }
+
+        function updateMancheBanner() {
+            const manche = MANCHES.find(m => m.id === state.currentMancheId);
+            document.getElementById('current-manche-title').textContent = manche.name;
+            const isLocked = state.manchesLocked[state.currentMancheId];
+            const badge = document.getElementById('manche-status-badge');
+            
+            if (isLocked) {
+                badge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-red-950/80 text-red-400 border border-red-800";
+                badge.textContent = "🔒 Pronostics Fermés";
+            } else {
+                badge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-emerald-900/60 text-emerald-400 border border-emerald-700/50";
+                badge.textContent = "🟢 Pronostics Ouverts";
+            }
+        }
+
+        function renderCategoriesBar() {
+            const container = document.getElementById('categories-bar');
+            container.innerHTML = CATEGORIES.map(cat => {
+                const isActive = cat === state.currentCategory;
+                const key = `${state.currentMancheId}_${cat}`;
+                const isValidated = state.userPronos[key] && state.userPronos[key].some(p => p !== null);
+
+                return `
+                    <button onclick="selectCategory('${cat}')" class="py-2 px-4 rounded-xl border font-bold text-sm whitespace-nowrap flex items-center gap-2 transition ${
+                        isActive 
+                        ? 'bg-white text-black border-white shadow-md' 
+                        : 'bg-brand-card border-brand-border text-gray-300 hover:border-gray-500'
+                    }">
+                        <span>${cat}</span>
+                        ${isValidated ? '<span class="w-2 h-2 rounded-full bg-emerald-500"></span>' : ''}
+                    </button>
+                `;
+            }).join('');
+            document.getElementById('current-cat-display').textContent = state.currentCategory;
+        }
+
+        function selectCategory(cat) {
+            state.currentCategory = cat;
+            renderCategoriesBar();
+            renderTop5Slots();
+        }
+
+        function renderTop5Slots() {
+            const key = `${state.currentMancheId}_${state.currentCategory}`;
+            const currentProno = state.userPronos[key] || [null, null, null, null, null];
+            const isLocked = state.manchesLocked[state.currentMancheId];
+
+            const statusTag = document.getElementById('prono-status-tag');
+            const isValidated = state.userPronos[key] && state.userPronos[key].length === 5 && !state.userPronos[key].includes(null);
+            
+            if (isValidated) {
+                statusTag.className = "text-xs bg-emerald-900/60 text-emerald-400 border border-emerald-700/50 px-2.5 py-1 rounded-full font-bold";
+                statusTag.textContent = "✓ Prono Validé";
+            } else {
+                statusTag.className = "text-xs bg-gray-800 text-gray-400 px-2.5 py-1 rounded-full font-bold";
+                statusTag.textContent = "Incomplet";
+            }
+
+            const positions = [
+                { pos: "1er", color: "text-yellow-400", border: "border-yellow-500/30" },
+                { pos: "2e", color: "text-gray-300", border: "border-gray-400/30" },
+                { pos: "3e", color: "text-amber-600", border: "border-amber-600/30" },
+                { pos: "4e", color: "text-gray-400", border: "border-brand-border" },
+                { pos: "5e", color: "text-gray-400", border: "border-brand-border" }
+            ];
+
+            const container = document.getElementById('top5-slots-container');
+            container.innerHTML = positions.map((p, idx) => {
+                const pilote = currentProno[idx];
+                return `
+                    <div onclick="${isLocked ? '' : `openPiloteModal(${idx}, 'manche')`}" 
+                         class="p-3.5 rounded-xl bg-gray-900/90 border ${p.border} flex items-center justify-between cursor-pointer active:scale-[0.99] transition ${isLocked ? 'opacity-60 cursor-not-allowed' : 'hover:border-gray-500'}">
+                        <div class="flex items-center gap-3">
+                            <span class="font-black text-lg ${p.color} w-8">${p.pos}</span>
+                            <span class="font-bold text-base ${pilote ? 'text-white' : 'text-gray-500 italic'}">
+                                ${pilote || 'Toucher pour choisir un pilote...'}
+                            </span>
+                        </div>
+                        <span class="text-xs bg-gray-800 text-gray-400 px-2 py-1 rounded font-bold">
+                            ${pilote ? 'Modifier' : 'Choisir'}
+                        </span>
+                    </div>
+                `;
+            }).join('');
+
+            const btnVal = document.getElementById('btn-validate-prono');
+            if (isLocked) {
+                btnVal.disabled = true;
+                btnVal.className = "w-full py-3.5 bg-gray-800 text-gray-500 font-bold text-lg rounded-xl cursor-not-allowed";
+                btnVal.textContent = "PRONOSTICS FERMÉS POUR CETTE MANCHE";
+            } else {
+                btnVal.disabled = false;
+                btnVal.className = "w-full py-3.5 bg-brand-red hover:bg-red-600 text-white font-black text-lg rounded-xl shadow-lg transition active:scale-[0.98]";
+                btnVal.textContent = "VALIDER MON PRONO";
+            }
+        }
+
+        function openPiloteModal(slotIndex, mode = "manche") {
+            state.currentModalSlot = slotIndex;
+            state.modalMode = mode;
+            
+            const category = mode === "manche" ? state.currentCategory : state.saisonCategory;
+            const pilotesList = state.pilotes[category] || [];
+            
+            const posNames = ["1ère Place", "2ème Place", "3ème Place", "4ème Place", "5ème Place"];
+            document.getElementById('modal-position-title').textContent = `Choix pour la ${posNames[slotIndex]}`;
+
+            const grid = document.getElementById('modal-pilotes-grid');
+            grid.innerHTML = `
+                <div class="grid grid-cols-1 gap-2">
+                    ${pilotesList.map(p => `
+                        <button onclick="selectPiloteFromModal('${p.replace(/'/g, "\\'")}')" 
+                                class="p-3.5 rounded-xl bg-brand-card hover:bg-brand-red/20 border border-brand-border text-left font-bold text-white transition active:bg-brand-red/40 flex items-center justify-between">
+                            <span>${p}</span>
+                            <span class="text-xs text-brand-red uppercase font-black">+ Sélectionner</span>
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+
+            document.getElementById('modal-pilotes').classList.remove('hidden');
+        }
+
+        function closePiloteModal() {
+            document.getElementById('modal-pilotes').classList.add('hidden');
+        }
+
+        function selectPiloteFromModal(pilote) {
+            if (state.modalMode === "manche") {
+                const key = `${state.currentMancheId}_${state.currentCategory}`;
+                if (!state.userPronos[key]) state.userPronos[key] = [null, null, null, null, null];
+                state.userPronos[key][state.currentModalSlot] = pilote;
+                renderTop5Slots();
+            } else {
+                const cat = state.saisonCategory;
+                if (!state.userSaisonPronos[cat]) state.userSaisonPronos[cat] = [null, null, null];
+                state.userSaisonPronos[cat][state.currentModalSlot] = pilote;
+                renderSaisonSlots();
+            }
+            closePiloteModal();
+        }
+
+        function clearSlotSelection() {
+            if (state.modalMode === "manche") {
+                const key = `${state.currentMancheId}_${state.currentCategory}`;
+                if (state.userPronos[key]) state.userPronos[key][state.currentModalSlot] = null;
+                renderTop5Slots();
+            } else {
+                const cat = state.saisonCategory;
+                if (state.userSaisonPronos[cat]) state.userSaisonPronos[cat][state.currentModalSlot] = null;
+                renderSaisonSlots();
+            }
+            closePiloteModal();
+        }
+
+        function saveProno() {
+            const key = `${state.currentMancheId}_${state.currentCategory}`;
+            const prono = state.userPronos[key];
+            if (!prono || prono.includes(null)) {
+                alert("Veuillez sélectionner les 5 pilotes avant de valider.");
+                return;
+            }
+            localStorage.setItem('cfm_user_pronos', JSON.stringify(state.userPronos));
+            renderCategoriesBar();
+            renderTop5Slots();
+            alert("✓ Votre pronostic pour cette catégorie a été enregistré !");
+        }
+
+        function renderSaisonCategoriesBar() {
+            const container = document.getElementById('saison-categories-bar');
+            container.innerHTML = CATEGORIES.map(cat => {
+                const isActive = cat === state.saisonCategory;
+                return `
+                    <button onclick="selectSaisonCategory('${cat}')" class="py-2 px-4 rounded-xl border font-bold text-sm whitespace-nowrap transition ${
+                        isActive 
+                        ? 'bg-yellow-500 text-black border-yellow-500 shadow-md' 
+                        : 'bg-brand-card border-brand-border text-gray-300 hover:border-gray-500'
+                    }">
+                        ${cat}
+                    </button>
+                `;
+            }).join('');
+            document.getElementById('saison-cat-display').textContent = state.saisonCategory;
+        }
+
+        function selectSaisonCategory(cat) {
+            state.saisonCategory = cat;
+            renderSaisonCategoriesBar();
+            renderSaisonSlots();
+        }
+
+        function renderSaisonSlots() {
+            const cat = state.saisonCategory;
+            const currentProno = state.userSaisonPronos[cat] || [null, null, null];
+            
+            const positions = [
+                { pos: "👑 1er Champion", color: "text-yellow-400", border: "border-yellow-500/40" },
+                { pos: "🥈 2e Place", color: "text-gray-300", border: "border-gray-400/30" },
+                { pos: "🥉 3e Place", color: "text-amber-600", border: "border-amber-600/30" }
+            ];
+
+            const container = document.getElementById('saison-slots-container');
+            container.innerHTML = positions.map((p, idx) => {
+                const pilote = currentProno[idx];
+                return `
+                    <div onclick="openPiloteModal(${idx}, 'saison')" 
+                         class="p-4 rounded-xl bg-gray-900 border ${p.border} flex items-center justify-between cursor-pointer hover:border-yellow-500/60 transition">
+                        <div class="flex items-center gap-3">
+                            <span class="font-black text-base ${p.color}">${p.pos}</span>
+                            <span class="font-bold text-base ${pilote ? 'text-white' : 'text-gray-500 italic'}">
+                                ${pilote || 'Toucher pour choisir un pilote...'}
+                            </span>
+                        </div>
+                        <span class="text-xs bg-gray-800 text-gray-400 px-2 py-1 rounded font-bold">Choisir</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function saveSaisonProno() {
+            const cat = state.saisonCategory;
+            const prono = state.userSaisonPronos[cat];
+            if (!prono || prono.includes(null)) {
+                alert("Veuillez sélectionner le Top 3 complet pour la saison.");
+                return;
+            }
+            localStorage.setItem('cfm_user_saison_pronos', JSON.stringify(state.userSaisonPronos));
+            alert("✓ Pronostic Saison enregistré pour " + cat + " !");
+        }
+
+        function renderRankingCategoriesBar() {
+            const container = document.getElementById('ranking-categories-bar');
+            container.innerHTML = CATEGORIES.map(cat => {
+                const isActive = cat === state.rankingCategory;
+                return `
+                    <button onclick="selectRankingCategory('${cat}')" class="py-1.5 px-3 rounded-lg border font-bold text-xs whitespace-nowrap transition ${
+                        isActive 
+                        ? 'bg-brand-red text-white border-brand-red' 
+                        : 'bg-brand-card border-brand-border text-gray-400'
+                    }">
+                        ${cat}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function selectRankingCategory(cat) {
+            state.rankingCategory = cat;
+            renderRankingCategoriesBar();
+            renderLeaderboards();
+        }
+
+        function renderLeaderboards() {
+            // CALCUL DES POINTS
+            // 1er = 25pt, 2e = 18pt, 3e = 15pt, 4e = 12pt, 5e = 10pt si correspondance exacte
+            // 5pt bonus si pilote trouvé dans le top 5 mais mauvaise position
+            
+            let userTotalPoints = 0;
+            let userCatPoints = { "300cc":0, "Open":0, "Supersport":0, "Superbike":0, "Side-Car":0, "Quad":0, "Ancienne":0 };
+
+            MANCHES.forEach(m => {
+                CATEGORIES.forEach(cat => {
+                    const key = `${m.id}_${cat}`;
+                    const official = state.officialResults[key];
+                    const userProno = state.userPronos[key];
+
+                    if (official && userProno) {
+                        let pts = 0;
+                        const pointsTable = [25, 18, 15, 12, 10];
+                        
+                        userProno.forEach((pilote, idx) => {
+                            if (pilote) {
+                                if (official[idx] === pilote) {
+                                    pts += pointsTable[idx];
+                                } else if (official.includes(pilote)) {
+                                    pts += 5; // Bonus
+                                }
+                            }
+                        });
+
+                        userCatPoints[cat] += pts;
+                        userTotalPoints += pts;
+                    }
+                });
+            });
+
+            // Simulons des scores de concurrents pour le classement
+            const leaderboardData = [
+                { name: "Vous (Joueur)", total: userTotalPoints, catPoints: userCatPoints[state.rankingCategory], isUser: true },
+                { name: "Rider_71", total: 142, catPoints: 25, isUser: false },
+                { name: "Piston_King", total: 128, catPoints: 18, isUser: false },
+                { name: "Gaz_A_Fond", total: 110, catPoints: 15, isUser: false },
+                { name: "Corner_Master", total: 95, catPoints: 12, isUser: false }
+            ];
+
+            // Tri pour classement général
+            const sortedGeneral = [...leaderboardData].sort((a,b) => b.total - a.total);
+            
+            const generalContainer = document.getElementById('leaderboard-general');
+            generalContainer.innerHTML = sortedGeneral.map((player, idx) => `
+                <div class="p-3 rounded-xl border flex items-center justify-between ${
+                    player.isUser 
+                    ? 'bg-yellow-500/20 border-yellow-500 text-white font-black' 
+                    : 'bg-gray-900/60 border-brand-border text-gray-300'
+                }">
+                    <div class="flex items-center gap-3">
+                        <span class="w-6 font-black text-center text-sm ${idx === 0 ? 'text-yellow-400 text-base' : 'text-gray-400'}">${idx + 1}</span>
+                        <span class="text-base">${player.name}</span>
+                    </div>
+                    <span class="text-lg font-black text-yellow-400">${player.total} <span class="text-xs text-gray-400 font-normal">pts</span></span>
+                </div>
+            `).join('');
+
+            // Tri pour classement par catégorie
+            const sortedCategory = [...leaderboardData].sort((a,b) => b.catPoints - a.catPoints);
+            const categoryContainer = document.getElementById('leaderboard-category');
+            categoryContainer.innerHTML = sortedCategory.map((player, idx) => `
+                <div class="p-2.5 rounded-xl border flex items-center justify-between ${
+                    player.isUser 
+                    ? 'bg-brand-red/20 border-brand-red text-white font-bold' 
+                    : 'bg-gray-900/40 border-brand-border text-gray-300'
+                }">
+                    <div class="flex items-center gap-3">
+                        <span class="w-6 font-bold text-center text-xs text-gray-400">${idx + 1}</span>
+                        <span class="text-sm">${player.name}</span>
+                    </div>
+                    <span class="text-sm font-bold text-white">${player.catPoints} <span class="text-xs text-gray-400 font-normal">pts</span></span>
+                </div>
+            `).join('');
+        }
+
+        function openAdminModal() {
+            document.getElementById('modal-admin').classList.remove('hidden');
+            document.getElementById('admin-manche-name').textContent = MANCHES.find(m => m.id === state.currentMancheId).name;
+            document.getElementById('admin-cat-name').textContent = state.currentCategory;
+            
+            const btnLock = document.getElementById('admin-btn-lock');
+            const isLocked = state.manchesLocked[state.currentMancheId];
+            btnLock.textContent = isLocked ? "Déverrouiller" : "Verrouiller";
+            btnLock.className = isLocked ? "px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-emerald-600" : "px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-red-600";
+
+            renderAdminOfficialSlots();
+        }
+
+        function closeAdminModal() {
+            document.getElementById('modal-admin').classList.add('hidden');
+        }
+
+        function checkAdminPin() {
+            const pin = document.getElementById('admin-pin-input').value;
+            if (pin === "1234") {
+                state.isAdminLoggedIn = true;
+                document.getElementById('admin-auth-section').classList.add('hidden');
+                document.getElementById('admin-content-section').classList.remove('hidden');
+            } else {
+                alert("Code PIN Incorrect (Entrez 1234)");
+            }
+        }
+
+        function toggleMancheLock() {
+            const current = state.manchesLocked[state.currentMancheId];
+            state.manchesLocked[state.currentMancheId] = !current;
+            localStorage.setItem('cfm_locks', JSON.stringify(state.manchesLocked));
+            
+            renderManchesBar();
+            updateMancheBanner();
+            renderTop5Slots();
+            openAdminModal();
+        }
+
+        function importPilotes() {
+            const text = document.getElementById('admin-pilotes-import').value.trim();
+            if (!text) {
+                alert("Veuillez saisir au moins un pilote.");
+                return;
+            }
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            state.pilotes[state.currentCategory] = lines;
+            localStorage.setItem('cfm_pilotes', JSON.stringify(state.pilotes));
+            document.getElementById('admin-pilotes-import').value = '';
+            alert(`✓ ${lines.length} pilotes ajoutés avec succès dans la catégorie ${state.currentCategory} !`);
+        }
+
+        function renderAdminOfficialSlots() {
+            const key = `${state.currentMancheId}_${state.currentCategory}`;
+            const official = state.officialResults[key] || [null, null, null, null, null];
+            const pilotesList = state.pilotes[state.currentCategory] || [];
+
+            const container = document.getElementById('admin-official-slots');
+            container.innerHTML = [1, 2, 3, 4, 5].map((pos, idx) => `
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold w-8 text-gray-400">${pos}er:</span>
+                    <select id="admin-official-pos-${idx}" class="flex-grow bg-gray-900 border border-brand-border rounded-lg p-2 text-sm text-white">
+                        <option value="">-- Aucun --</option>
+                        ${pilotesList.map(p => `
+                            <option value="${p.replace(/"/g, '&quot;')}" ${official[idx] === p ? 'selected' : ''}>${p}</option>
+                        `).join('')}
+                    </select>
+                </div>
+            `).join('');
+        }
+
+        function saveOfficialResults() {
+            const key = `${state.currentMancheId}_${state.currentCategory}`;
+            const results = [];
+            for (let i = 0; i < 5; i++) {
+                const val = document.getElementById(`admin-official-pos-${i}`).value;
+                results.push(val || null);
+            }
+            state.officialResults[key] = results;
+            localStorage.setItem('cfm_official_results', JSON.stringify(state.officialResults));
+            alert("✓ Résultats officiels enregistrés ! Le classement a été mis à jour.");
+            closeAdminModal();
+            renderLeaderboards();
+        }
+    </script>
+</body>
+</html>
